@@ -7,8 +7,8 @@
 -export([
          init/0,
          lookup/1, lookup/2, lookup_tags/1,
-         collections/0, metrics/1, namespaces/1, namespaces/2,
-         tags/2, tags/3, values/3, values/4, expand/2, metric_variants/2,
+         collections/0, metrics/1, metrics/3, namespaces/1, namespaces/2,
+         tags/2, tags/3, values/3, values/4, expand/2,
          add/4, add/5, update/5,
          delete/4, delete/5,
          get_id/4, tdelta/1
@@ -42,11 +42,6 @@ lookup_tags(Query) ->
     Rows = execute({select, "lookup_tags/1", Q, Vs}),
     {ok, Rows}.
 
-metric_variants(Collection, Prefix) when is_list(Prefix) ->
-    {ok, Q, Vs} = query_builder:metric_variants_query(Collection, Prefix),
-    Rows = execute({select, "metric_variants/2", Q, Vs}),
-    {ok, [R || {R} <- lists:sort(Rows)]}.
-
 collections() ->
     {ok, Q, Vs} = query_builder:collections_query(),
     Rows = execute({select, "collections/0", Q, Vs}),
@@ -55,6 +50,12 @@ collections() ->
 metrics(Collection) ->
     {ok, Q, Vs} = query_builder:metrics_query(Collection),
     Rows = execute({select, "metrics/1", Q, Vs}),
+    R = [dproto:metric_from_list(M) || {M} <- Rows],
+    {ok, R}.
+
+metrics(Collection, Prefix, Depth) ->
+    {ok, Q, Vs} = query_builder:metrics_query(Collection, Prefix, Depth),
+    Rows = execute({select, "metrics/3", Q, Vs}),
     R = [dproto:metric_from_list(M) || {M} <- Rows],
     {ok, R}.
 

@@ -23,6 +23,9 @@ non_empty_binary() ->
 non_empty_list(T) ->
     ?SUCHTHAT(L, list(T), L /= []).
 
+pos_int() ->
+    ?SUCHTHAT(I, int(), I > 0).
+
 bucket() ->
     non_empty_binary().
 
@@ -97,11 +100,11 @@ prop_lookup_tags() ->
         end
     ).
 
-prop_metric_variants() ->
-    ?FORALL({Collection, Prefix}, {collection(), prefix()},
+prop_metrics_by_prefix() ->
+    ?FORALL({Collection, Prefix, Depth}, {collection(), prefix(), pos_int()},
         begin
             Fun = fun(C) ->
-                {ok, Q, _V} = ?M:metric_variants_query(Collection, Prefix),
+                {ok, Q, _V} = ?M:metrics_query(Collection, Prefix, Depth),
                 {Res, _} = epgsql:parse(C, Q),
                 Res
             end,

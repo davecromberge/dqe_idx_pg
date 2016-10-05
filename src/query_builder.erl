@@ -1,6 +1,6 @@
 -module(query_builder).
 
--export([collections_query/0, metrics_query/1, metric_variants_query/2,
+-export([collections_query/0, metrics_query/1, metrics_query/3,
          namespaces_query/1, namespaces_query/2,
          lookup_query/2, lookup_tags_query/1,
          tags_query/2, tags_query/3, add_tags/2, update_tags/2,
@@ -41,6 +41,19 @@ metrics_query(Collection)
             "SELECT metric FROM t WHERE metric IS NOT NULL",
     Values = [Collection],
     {ok, Query, Values}.
+
+metrics_query(Collection, Prefix, Depth)
+  when is_binary(Collection),
+       is_list(Prefix),
+       Depth > 0 ->
+    {_N, MetricVals, MetricPredicate} = metric_variant_where(Prefix, 6),
+    Query = ["SELECT DISTINCT metric[$1:$2]",
+             "FROM ", ?MET_TABLE, " ",
+             "WHERE metric[$3:$4] IS NOT NULL AND collection = $5 "],
+    From = 1 + length(Prefix),
+    To = From + Depth - 1,
+    Values = [From, To, From, To, Collection | MetricVals],
+    {ok, Query ++ MetricPredicate, Values}.
 
 namespaces_query(Collection)
   when is_binary(Collection) ->
@@ -116,17 +129,6 @@ glob_query(Bucket, Globs) ->
              "WHERE bucket = $1 AND "],
     GlobWheres = [glob_where(Bucket, Query, Glob) || Glob <- Globs],
     {ok, GlobWheres}.
-
-metric_variants_query(Collection, Prefix)
-  when is_binary(Collection),
-       is_list(Prefix) ->
-    {_N, MetricVals, MetricPredicate} = metric_variant_where(Prefix, 4),
-    Query = ["SELECT DISTINCT metric[$1]",
-             "FROM ", ?MET_TABLE, " ",
-             "WHERE metric[$2] IS NOT NULL AND collection = $3 "],
-    PathIndex = 1 + length(Prefix),
-    Values = [PathIndex, PathIndex, Collection | MetricVals],
-    {ok, Query ++ MetricPredicate, Values}.
 
 tags_query(Collection, Namespace)
   when is_binary(Collection),
