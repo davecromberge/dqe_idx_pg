@@ -42,6 +42,9 @@ metrics_query(Collection)
     Values = [Collection],
     {ok, Query, Values}.
 
+metrics_query(Collection, Prefix, Depth) when is_binary(Prefix) ->
+    metrics_query(Collection, dproto:metric_to_list(Prefix), Depth);
+
 metrics_query(Collection, Prefix, Depth)
   when is_binary(Collection),
        is_list(Prefix),
